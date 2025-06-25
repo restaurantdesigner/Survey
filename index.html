@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survey</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Lato', sans-serif;
+      background: #fff;
+      color: #000;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center,
+        rgba(0, 0, 0, 0) 60%,
+        rgba(0, 0, 0, 0.08) 100%);
+    }
+
+    .wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      position: relative;
+    }
+
+    .cta-button {
+      padding: 10px 28px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      background-color: rgb(230, 117, 42);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+    }
+
+    #panel-backdrop {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #panel-backdrop.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #side-panel {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 90%;
+      max-width: 600px;
+      height: 100%;
+      background-color: white;
+      color: rgb(27, 8, 37);
+      z-index: 1001;
+      transition: right 0.4s ease;
+      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #side-panel.open {
+      right: 0;
+    }
+
+    #close-panel {
+      background: none;
+      border: none;
+      font-size: 24px;
+      align-self: flex-end;
+      cursor: pointer;
+    }
+
+    .form-section {
+      margin-top: 15px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    @media (min-width: 600px) {
+      .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .form-grid label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f9f9f9;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    #otroInputWrapper {
+      display: none;
+      margin-top: 8px;
+    }
+
+    #otroInputWrapper input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+
+    .progress-wrapper {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  position: sticky;  /* Прогресс-бар будет прилипать к верхней части экрана */
+  top: 0;            /* Позиция прилипшего элемента на самом верху */
+  z-index: 9999;     /* Для того, чтобы прогресс-бар был выше других элементов */
+  background-color: white; /* Белый фон, чтобы он не сливался с фоном формы */
+  padding: 10px;
+  border-bottom: 2px solid #ccc; /* Линия снизу для разделения */
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  text-align: center;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.progress-container {
+  height: 8px;
+  background: #eee;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;  /* Прогресс будет изменяться динамически */
+  background: linear-gradient(90deg, #ffffff, #fa9828);
+  transition: width 0.3s ease; /* Плавная анимация изменения ширины */
+}
+
+
+    input[type="text"], input[type="email"], input[type="tel"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .consent-fixed {
+      margin-top: auto;
+      padding-top: 15px;
+      border-top: 1px solid #ddd;
+    }
+
+    .consent-fixed label {
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .submit-button {
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      background: rgb(0, 0, 0);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+textarea {
+    width: 100%; /* Фиксированная ширина по контейнеру */
+    max-width: 500px; /* Максимальная ширина */
+    min-height: 80px; /* Минимальная высота */
+    resize: vertical; /* Только вертикальное изменение размера */
+    padding: 10px; /* Отступы внутри */
+    border-radius: 6px; /* Скругленные углы */
+    border: 1px solid #ccc; /* Рамка */
+    font-size: 1rem; /* Размер шрифта */
+  }
+
+ .slider {
+    width: 100%;
+    margin: 10px 0;
+  }
+  .form-grid {
+    margin-bottom: 15px;
+  }
+
+  /* Стили для секции с ползунками */
+#estate-allocation-section {
+  margin-bottom: 20px;
+}
+
+#estate-allocation-section .form-grid {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+#estate-allocation-section .slider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 30%;
+}
+
+#estate-allocation-section .slider {
+  width: 100%;
+  margin: 10px 0;
+}
+
+#estate-allocation-section label {
+  text-align: center;
+}
+
+#estate-allocation-section #heirs-value, 
+#estate-allocation-section #tax-value, 
+#estate-allocation-section #charity-value {
+  text-align: center;
+  margin-top: 5px;
+}
+
+#estate-allocation-section .form-grid p {
+  margin: 0;
+}
+
+
+/* Стили для секции с чекбоксами */
+#estate-planning-section .form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+#estate-planning-section label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+
+#estate-planning-section input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+#estate-planning-section .form-grid p {
+  margin: 0;
+}
+/* Стили для секции с радиокнопками */
+#skills-view-section .form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+#skills-view-section label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+
+#skills-view-section input[type="radio"] {
+  margin-right: 10px;
+}
+
+#skills-view-section .form-grid p {
+  margin: 0;
+}
+
+
+/* Стили для секции с радиокнопками */
+#charity-involvement-section .form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+#charity-involvement-section label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+
+#charity-involvement-section input[type="radio"] {
+  margin-right: 10px;
+}
+
+#charity-involvement-section .form-grid p {
+  margin: 0;
+}
+
+
+/* Стили для секции с радиокнопками */
+#charitable-gifts-section .form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+#charitable-gifts-section label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+
+#charitable-gifts-section input[type="radio"] {
+  margin-right: 10px;
+}
+
+#charitable-gifts-section .form-grid p {
+  margin: 0;
+}
+
+
+  
+    
+  </style>
+</head>
+<body>
+
+
+<div class="logo-container">
+  <img src="img/logo.png" alt="Logo" class="logo">
+</div>
+
+
+
+
+
+  <div class="wrapper">
+
+  
+    <!-- Логотип -->
+    
+
+
+
+    <button class="cta-button open-panel">Get Started</button>
+  </div>
+
+  <div id="panel-backdrop"></div>
+  <div id="side-panel">
+    <button id="close-panel">&times;</button>
+
+    <h2>Let's talk about your charitable efforts</h2>
+  <p>Please fill out this short questionnaire to help us understand how we can support your charitable goals.</p>
+
+    <div class="form-section">
+      <label>Name <input type="text" name="name" required></label>
+      <label>Email Address <input type="email" name="email" required></label>
+      <label>Phone Number <input type="tel" name="phone"></label>
+    </div>
+
+    <div class="progress-wrapper">
+      <div class="progress-text" id="progress-text">0% completed</div>
+      <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+
+    <div class="form-section">
+  <h3>In your lifetime how have you accumulated your wealth?</h3>
+  <div class="form-grid">
+    <label><input type="checkbox" name="wealth" value="personal_initiative"> Personal initiative</label>
+    <label><input type="checkbox" name="wealth" value="successful_investment"> Successful investment</label>
+    <label><input type="checkbox" name="wealth" value="gifts"> Gifts</label>
+    <label><input type="checkbox" name="wealth" value="unexpected_good_fortune"> Unexpected good fortune</label>
+    <label><input type="checkbox" name="wealth" value="inheritance"> Inheritance</label>
+    <label><input type="checkbox" name="wealth" value="building_family_business"> Building or growing a family business</label>
+    <label><input type="checkbox" id="otherCheckbox" name="wealth" value="other"> Other</label>
+  </div>
+  <div id="otherInputWrapper" style="display: none;">
+    <input type="text" name="wealth_other" placeholder="Please specify your method of wealth accumulation">
+  </div>
+</div>
+
+<script>
+  // Добавляем обработчик события для отображения или скрытия поля ввода
+  document.getElementById('otherCheckbox').addEventListener('change', function() {
+    var inputWrapper = document.getElementById('otherInputWrapper');
+    // Если выбран чекбокс "Other", показываем поле для ввода
+    if (this.checked) {
+      inputWrapper.style.display = 'block';
+    } else {
+      inputWrapper.style.display = 'none';
+    }
+  });
+</script>
+
+
+
+    <div class="form-section">
+  <h3>To which of the following do you feel an obligation regarding the distribution of your wealth?</h3>
+  <p>Choose all that are important to you.</p>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="wealth" value="spouse"> Spouse</label>
+    <label><input type="checkbox" name="wealth" value="children"> Children</label>
+    <label><input type="checkbox" name="wealth" value="business"> Business</label>
+    <label><input type="checkbox" name="wealth" value="friends"> Friends</label>
+    <label><input type="checkbox" name="wealth" value="health_care"> Health Care institutions</label>
+    <label><input type="checkbox" name="wealth" value="community"> Community Institutions</label>
+    <label><input type="checkbox" name="wealth" value="parents"> Parents</label>
+    <label><input type="checkbox" name="wealth" value="religious"> Religious institutions</label>
+    <label><input type="checkbox" name="wealth" value="mentors"> Mentors</label>
+    <label><input type="checkbox" name="wealth" value="education"> Educational institutions</label>
+    <label><input type="checkbox" name="wealth" value="none"> None</label>
+  </div>
+</div>
+
+
+
+
+
+
+    <div class="form-section">
+  <h3>Which values do you feel are most important to you in your life?</h3>
+  <p>Select all values that are important to you.</p>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="values" value="honesty_integrity"> Honest/Integrity</label>
+    <label><input type="checkbox" name="values" value="frugality"> Frugality</label>
+    <label><input type="checkbox" name="values" value="spirituality"> Spirituality</label>
+    <label><input type="checkbox" name="values" value="responsibility_for_actions"> Responsibility for Actions</label>
+    <label><input type="checkbox" name="values" value="fellowship"> Fellowship</label>
+    <label><input type="checkbox" name="values" value="recognition"> Recognition</label>
+    <label><input type="checkbox" name="values" value="respect_for_others"> Respect for others</label>
+    <label><input type="checkbox" name="values" value="generosity"> Generosity</label>
+  </div>
+</div>
+
+
+<div class="form-section">
+  <h3>Why is your first choice of most importance?</h3>
+  <p>Please explain why you ranked your first choice as the most important.</p>
+  <textarea name="first_choice_reason" rows="4" placeholder="Your explanation here..."></textarea>
+</div>
+
+
+<div class="form-section">
+  <h3>Which of the following associations are most important to you?</h3>
+  <p>Select all that apply.</p>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="associations" value="family_relationships"> Family relationships</label>
+    <label><input type="checkbox" name="associations" value="social_standing"> Social standing</label>
+    <label><input type="checkbox" name="associations" value="personal"> Personal</label>
+    <label><input type="checkbox" name="associations" value="education"> Education</label>
+    <label><input type="checkbox" name="associations" value="volunteerism"> Volunteerism</label>
+    <label><input type="checkbox" name="associations" value="career"> Career</label>
+    <label><input type="checkbox" name="associations" value="personal_achievement"> Personal achievement/Recreation/Leisure</label>
+    <label><input type="checkbox" name="associations" value="personal_initiative"> Personal initiative/Hard Work</label>
+  </div>
+</div>
+
+
+
+<div class="form-section">
+  <h3>What is your primary motivation for planning your estate?</h3>
+  <p>Select all that apply.</p>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="estate_planning" value="increase_inheritance"> To increase inheritance for heirs</label>
+    <label><input type="checkbox" name="estate_planning" value="reduce_tax"> To reduce tax</label>
+    <label><input type="checkbox" name="estate_planning" value="charitable_contributions"> To make charitable contributions</label>
+  </div>
+</div>
+
+
+<div class="form-section">
+  <h3>If there were no such thing as tax, and you could allocate your estate at death any way you wanted among the following choices, what would your ideal allocation look like?</h3>
+  <p>You can allocate units to an option by moving the corresponding slider.</p>
+
+  <div class="form-grid">
+    <label for="heirs"> % Heirs </label>
+    <input type="range" id="heirs" name="heirs" min="0" max="100" value="0" class="slider" onchange="updateValues()">
+    <span id="heirs-value">0%</span>
+
+    <label for="federal"> % Federal Government </label>
+    <input type="range" id="federal" name="federal" min="0" max="100" value="0" class="slider" onchange="updateValues()">
+    <span id="federal-value">0%</span>
+
+    <label for="charitable"> % Charitable </label>
+    <input type="range" id="charitable" name="charitable" min="0" max="100" value="0" class="slider" onchange="updateValues()">
+    <span id="charitable-value">0%</span>
+  </div>
+
+  <div class="form-grid">
+    <p>Used Units: <span id="used-units">0%</span></p>
+    <p>Available Units: <span id="available-units">100%</span></p>
+  </div>
+</div>
+
+<div class="form-section">
+  <h3>If your estate were settled today, which of the following most clearly reflects how you believe your assets will be distributed among three beneficiaries of wealth?</h3>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="estate_distribution" value="100_heirs_0_tax_0_charity"> 100% Heirs, 0% Tax, 0% Charity</label>
+    <label><input type="checkbox" name="estate_distribution" value="50_heirs_50_tax_0_charity"> 50% Heirs, 50% Tax, 0% Charity</label>
+    <label><input type="checkbox" name="estate_distribution" value="50_heirs_40_tax_1_charity"> 50% Heirs, 40% Tax, 1% Charity</label>
+  </div>
+</div>
+
+
+
+
+
+<div class="form-section" id="estate-allocation-section">
+  <h3>If the previous question were settled today, how would your estate be allocated?</h3>
+  <p>You can allocate units to an option by moving the corresponding slider.</p>
+
+  <div class="form-grid">
+    <div class="slider-container">
+      <label for="heirs"> % Heirs </label>
+      <input type="range" id="heirs" name="heirs" min="0" max="100" value="0" class="slider" onchange="updateValues()">
+      <span id="heirs-value">0%</span>
+    </div>
+
+    <div class="slider-container">
+      <label for="tax"> % Tax </label>
+      <input type="range" id="tax" name="tax" min="0" max="100" value="0" class="slider" onchange="updateValues()">
+      <span id="tax-value">0%</span>
+    </div>
+
+    <div class="slider-container">
+      <label for="charity"> % Charity </label>
+      <input type="range" id="charity" name="charity" min="0" max="100" value="0" class="slider" onchange="updateValues()">
+      <span id="charity-value">0%</span>
+    </div>
+  </div>
+
+  <div class="form-grid">
+    <div class="allocation-info">
+      <p>Used Units: <span id="used-units">0%</span></p>
+      <p>Available Units: <span id="available-units">100%</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- Подключение CSS и JS файлов -->
+<link rel="stylesheet" href="styles.css">
+<script src="script.js"></script>
+
+
+
+<div class="form-section" id="estate-planning-section">
+  <h3>Which statement reflects your views regarding estate planning?</h3>
+  
+  <div class="form-grid">
+    <label><input type="checkbox" name="estate-planning" value="spend-during-lifetime"> I prefer to spend my assets during my lifetime</label>
+    <label><input type="checkbox" name="estate-planning" value="left-to-heirs"> Whatever is left of my estate should pass to my heirs</label>
+    <label><input type="checkbox" name="estate-planning" value="specific-heirs"> There are certain monies I'd like to leave to specific heirs</label>
+    <label><input type="checkbox" name="estate-planning" value="maximize-inheritance"> I intend to plan my estate that will maximize my heirs' inheritance</label>
+  </div>
+</div>
+
+<!-- Подключение CSS и JS файлов -->
+<link rel="stylesheet" href="styles.css">
+<script src="script.js"></script>
+
+<div class="form-section" id="skills-view-section">
+  <h3>You may be concerned that your heirs lack the necessary skills to manage wealth. Which statement most closely reflects your view?</h3>
+  
+  <div class="form-grid">
+    <label><input type="radio" name="skills" value="do-not-possess"> I believe my heirs do not possess the necessary skills</label>
+    <label><input type="radio" name="skills" value="do-possess"> I believe my heirs do possess the necessary skills</label>
+    <label><input type="radio" name="skills" value="unsure"> I am unsure of the level of interest</label>
+  </div>
+</div>
+
+<!-- Подключение CSS и JS файлов -->
+<link rel="stylesheet" href="styles.css">
+<script src="script.js"></script>
+
+
+
+
+<div class="form-section" id="charity-involvement-section">
+  <h3>Which statement most closely reflects your level of personal involvement with charitable organizations, including volunteer time and/or money?</h3>
+  
+  <div class="form-grid">
+    <label><input type="radio" name="charity-involvement" value="little-or-no"> I have had little or no involvement with charities</label>
+    <label><input type="radio" name="charity-involvement" value="moderate"> I have had moderate involvement with charities</label>
+    <label><input type="radio" name="charity-involvement" value="active"> I have been active with charities</label>
+  </div>
+</div>
+
+<!-- Подключение CSS и JS файлов -->
+<link rel="stylesheet" href="styles.css">
+<script src="script.js"></script>
+
+
+<div class="form-section" id="charitable-gifts-section">
+  <h3>Which statement most closely reflects your thoughts regarding the transfer of charitable gifts through your estate plan?</h3>
+  
+  <div class="form-grid">
+    <label><input type="radio" name="charitable-gifts" value="no-intention" onchange="updateStatusBar()"> Charity begins at home. I have no intention of providing for charitable organizations through my estate plan.</label>
+    <label><input type="radio" name="charitable-gifts" value="rather-charity" onchange="updateStatusBar()"> I would rather direct money to charity than pay taxes.</label>
+    <label><input type="radio" name="charitable-gifts" value="consider-charity" onchange="updateStatusBar()"> As long as my family legacy isn't compromised, I'd consider a charitable gift as part of my estate plan.</label>
+    <label><input type="radio" name="charitable-gifts" value="not-today" onchange="updateStatusBar()"> I would like to include charitable gifts in the distribution of my estate in some form, however not today.</label>
+    <label><input type="radio" name="charitable-gifts" value="plan-inclusion" onchange="updateStatusBar()"> I plan to include charitable gifts in the distribution of my estate.</label>
+    <label><input type="radio" name="charitable-gifts" value="philanthropy" onchange="updateStatusBar()"> Philanthropy is the focal point of my estate plan.</label>
+  </div>
+</div>
+
+<!-- Подключение CSS и JS файлов -->
+<link rel="stylesheet" href="styles.css">
+<script src="script.js"></script>
+
+
+<div class="form-section">
+  <h3>What do you think about transferring assets to charitable organizations during your lifetime, when you can see an immediate impact from your gifts?</h3>
+  <p>Select all that apply.</p>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="charitable-transfer" value="major-gifts"> I prefer to make major charitable gifts as soon as possible, so that I can see my assets work during my lifetime.</label>
+    <label><input type="checkbox" name="charitable-transfer" value="some-gifts"> I prefer to make some gifts today. I'd like to explore ways to use tools such as the GIFTABULATOR to achieve other financial objectives as well as philanthropic objectives.</label>
+    <label><input type="checkbox" name="charitable-transfer" value="small-amounts"> I prefer to give relatively small amounts today and wait to contribute my assets at my death.</label>
+    <label><input type="checkbox" name="charitable-transfer" value="no-contributions"> I do not intend to make charitable contributions.</label>
+  </div>
+</div>
+
+
+<div class="form-section">
+  <h3>Which of the following statements reflect your view regarding the process of family philanthropy? Check all that apply.</h3>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="family-philanthropy" value="individual-thing"> Charitable giving is an individual thing, not easily transformed into a shared experience.</label>
+    <label><input type="checkbox" name="family-philanthropy" value="family-consensus"> Achieving a family consensus around giving is essential to successful family philanthropy.</label>
+    <label><input type="checkbox" name="family-philanthropy" value="resources-for-charity"> All individuals in the family should be provided with resources to give to charity as they see fit.</label>
+    <label><input type="checkbox" name="family-philanthropy" value="family-foundation"> A family foundation will enhance the process of family philanthropy by creating an entity in which all family members can play an important decision-making role.</label>
+    <label><input type="checkbox" name="family-philanthropy" value="private-foundation-complicated"> I view a private family foundation as complicated, and not required for effective family philanthropy.</label>
+    <label><input type="checkbox" name="family-philanthropy" value="shared-philanthropy-experience"> The experience of shared philanthropy provides an opportunity to use actions, not just words to teach children what is important.</label>
+  </div>
+</div>
+
+
+
+
+<div class="form-section">
+  <h3>Please select which area is of philanthropic interest.</h3>
+  <p>Select all that apply.</p>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="philanthropy" value="education"> Education</label>
+    <label><input type="checkbox" name="philanthropy" value="health"> Health</label>
+    <label><input type="checkbox" name="philanthropy" value="social-services"> Social Services</label>
+    <label><input type="checkbox" name="philanthropy" value="arts"> Arts</label>
+    <label><input type="checkbox" name="philanthropy" value="culture"> Culture</label>
+    <label><input type="checkbox" name="philanthropy" value="environment"> Environment and Wildlife</label>
+    <label><input type="checkbox" name="philanthropy" value="international"> International Affairs</label>
+    <label><input type="checkbox" name="philanthropy" value="religious"> Religious</label>
+  </div>
+</div>
+
+
+
+<div class="form-section">
+  <h3>Please indicate your preference(s) regarding recognition for philanthropic contributions. (Check all that apply)</h3>
+
+  <div class="form-grid">
+    <label><input type="checkbox" name="recognition" value="thank_you_letter"> Thank you Letter</label>
+    <label><input type="checkbox" name="recognition" value="personal_phone_call"> Personal Phone Call</label>
+    <label><input type="checkbox" name="recognition" value="formal_group_reception"> Formal group reception</label>
+    <label><input type="checkbox" name="recognition" value="published_listing"> Published listing</label>
+    <label><input type="checkbox" name="recognition" value="news_release"> News Release</label>
+    <label><input type="checkbox" name="recognition" value="plaque_display"> Plaque or Permanent Display</label>
+    <label><input type="checkbox" name="recognition" value="meeting_with_ceo"> Private meeting with CEO</label>
+    <label><input type="checkbox" name="recognition" value="none"> None</label>
+  </div>
+</div>
+
+
+
+
+
+
+    <div class="consent-fixed">
+      <label>
+        <input type="checkbox" required>
+        I agree to the processing of my personal data in accordance with the <a href="#" target="_blank">Privacy Policy</a>.
+      </label>
+      <button class="submit-button" id="submit-btn">Submit</button>
+    </div>
+  </div>
+
+  <script>
+  const panel = document.getElementById('side-panel');
+  const backdrop = document.getElementById('panel-backdrop');
+  const openButtons = document.querySelectorAll('.open-panel');
+  const closeButton = document.getElementById('close-panel');
+  const submitButton = document.getElementById('submit-btn');
+  const otroCheckbox = document.getElementById('otherCheckbox');
+  const otroInputWrapper = document.getElementById('otherInputWrapper');
+
+  openButtons.forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      panel.classList.toggle('open');
+      backdrop.classList.toggle('visible');
+    });
+  });
+
+  function closePanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('visible');
+  }
+
+  backdrop.addEventListener('click', closePanel);
+  closeButton.addEventListener('click', closePanel);
+
+  submitButton.addEventListener('click', () => {
+    panel.style.transition = 'right 0.4s ease';
+    panel.style.right = '-100%';
+    backdrop.style.opacity = 0;
+  });
+
+  // Обработчик для чекбокса "Other"
+  otroCheckbox.addEventListener('change', function () {
+    otroInputWrapper.style.display = this.checked ? 'block' : 'none';
+  });
+
+  // Обновление прогресса
+  function updateStepProgress() {
+    const sections = document.querySelectorAll('.form-section');
+    let completed = 0;
+    sections.forEach(section => {
+      const checked = section.querySelectorAll('input[type="checkbox"]:checked').length;
+      if (checked > 0) completed++;
+    });
+    const percent = Math.round((completed / sections.length) * 100);
+    document.getElementById('progress-bar').style.width = `${percent}%`;
+    document.getElementById('progress-text').textContent = `${percent}% completed`;
+  }
+
+  // Привязка события для всех чекбоксов
+  document.querySelectorAll('.form-section input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', updateStepProgress);
+  });
+
+  // Инициализация прогресса при загрузке страницы
+  document.addEventListener('DOMContentLoaded', updateStepProgress);
+
+  
+ const textarea = document.getElementById('explanation-textarea');
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+
+  // Максимальное количество символов, которое может быть введено
+  const maxLength = 500;
+
+  // Обработчик событий для изменения текста в поле
+  textarea.addEventListener('input', function() {
+    const currentLength = textarea.value.length;
+
+    // Вычисление процента заполнения
+    const percentage = (currentLength / maxLength) * 100;
+
+    // Обновление ширины прогресс-бара
+    progressBar.style.width = percentage + '%';
+
+    // Обновление текста в статус-баре
+    progressText.textContent = Math.round(percentage) + '% completed';
+  });
+
+function updateValues() {
+    const heirs = document.getElementById('heirs').value;
+    const federal = document.getElementById('federal').value;
+    const charitable = document.getElementById('charitable').value;
+
+    document.getElementById('heirs-value').textContent = heirs + '%';
+    document.getElementById('federal-value').textContent = federal + '%';
+    document.getElementById('charitable-value').textContent = charitable + '%';
+
+    const usedUnits = parseInt(heirs) + parseInt(federal) + parseInt(charitable);
+    document.getElementById('used-units').textContent = usedUnits + '%';
+    document.getElementById('available-units').textContent = 100 - usedUnits + '%';
+  }
+
+
+// Функция для обновления значений в статус-баре
+function updateStatusBar() {
+  const charityInvolvement = document.querySelector('input[name="charity-involvement"]:checked');
+  const heirSkills = document.querySelector('input[name="heir-skills"]:checked');
+
+  let usedUnits = 0;
+
+  if (charityInvolvement) {
+    // Примерная логика для уровня вовлеченности в благотворительность
+    if (charityInvolvement.value === "little-or-no") usedUnits += 10;
+    else if (charityInvolvement.value === "moderate") usedUnits += 50;
+    else if (charityInvolvement.value === "active") usedUnits += 90;
+  }
+
+  if (heirSkills) {
+    // Примерная логика для уровня уверенности в навыках наследников
+    if (heirSkills.value === "do-not-possess") usedUnits += 10;
+    else if (heirSkills.value === "do-possess") usedUnits += 50;
+    else if (heirSkills.value === "unsure") usedUnits += 30;
+  }
+
+  // Обновляем статус-бар
+  document.getElementById('used-units').textContent = usedUnits + '%';
+  document.getElementById('available-units').textContent = 100 - usedUnits + '%';
+}
+
+
+
+
+// Функция для обновления статус-бара
+function updateStatusBar() {
+  const selectedOption = document.querySelector('input[name="charitable-gifts"]:checked');
+  
+  if (selectedOption) {
+    const value = selectedOption.value;
+    document.getElementById('selected-option').textContent = value.replace(/-/g, ' ').toUpperCase(); // Очищаем от дефисов и делаем текст заглавными
+  }
+}
+
+
+
+
+  // Обновление статус-бара при изменении состояния чекбоксов
+  document.querySelectorAll('input[name="charitable-transfer"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      updateStatusBar();
+    });
+  });
+
+  function updateStatusBar() {
+    const selectedOptions = document.querySelectorAll('input[name="charitable-transfer"]:checked');
+    let selectedValues = [];
+
+    selectedOptions.forEach(option => {
+      selectedValues.push(option.value);
+    });
+
+    document.getElementById('status-bar').textContent = 'Selected Options: ' + selectedValues.join(', ');
+  }
+
+
+
+</script>
+
+
+
+
+
+</body>
+</html>
